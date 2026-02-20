@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Food Bank Management Preview</title>
+    <style>
+      :root{--bg:#f8fafc;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--emerald:#059669;--critical:#ef4444;--low:#f59e0b;--stable:#10b981}
+      *{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#f8fafc,#ecfdf5);color:var(--text)}
+      .wrap{max-width:1100px;margin:0 auto;padding:0 24px}
+      header{background:#ffffffee;border-bottom:1px solid var(--border);position:sticky;top:0;backdrop-filter:blur(4px)}
+      .top{display:flex;justify-content:space-between;align-items:center;padding:16px 0;gap:16px;flex-wrap:wrap}
+      .brand{display:flex;gap:10px;align-items:center}.logo{font-size:26px}
+      .sub{font-size:12px;color:var(--muted)}
+      .tabs{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--border);background:#fff;padding:9px 12px;border-radius:10px;cursor:pointer}
+      .btn.active{background:#d1fae5;color:#047857;border-color:#a7f3d0}.btn.primary{background:var(--emerald);color:#fff;border:none}
+      main{padding:28px 0 42px}.title{font-size:30px;font-weight:700;margin:0 0 20px}
+      .card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+      table{width:100%;border-collapse:collapse}th,td{padding:14px 16px;border-bottom:1px solid #f1f5f9;text-align:left;font-size:14px}th{background:#f8fafc;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+      .pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid;font-size:12px;font-weight:700}
+      .Critical{background:#fee2e2;color:#b91c1c;border-color:#fecaca}.Low{background:#ffedd5;color:#c2410c;border-color:#fed7aa}.Stable{background:#dcfce7;color:#047857;border-color:#bbf7d0}
+      .warn{color:var(--critical);font-size:16px;margin-left:6px}
+      .stock{display:flex;gap:8px}.iconBtn{width:28px;height:28px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer}
+      .urgentBtn{border:none;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer}
+      .urgentOn{background:#fee2e2;color:#b91c1c}.urgentOff{background:#f1f5f9;color:#334155}
+      .login{max-width:420px;margin:20px auto;background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,.08)}
+      .input{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;margin:6px 0 12px}
+      .err{color:#dc2626;font-size:13px;margin-bottom:10px}
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap top">
+        <div class="brand"><div class="logo">🤝</div><div><div><b>NourishNet Food Bank</b></div><div class="sub">Modern inventory visibility for donors and operators</div></div></div>
+        <div class="tabs">
+          <button class="btn active" id="donorTab">Donor Dashboard</button>
+          <button class="btn" id="adminTab">Admin Portal</button>
+          <button class="btn" id="logoutBtn" style="display:none">Logout</button>
+        </div>
+      </div>
+    </header>
+    <main class="wrap">
+      <h1 class="title" id="title">Donor Dashboard: Current Pantry Status</h1>
+      <div id="content"></div>
+    </main>
+
+    <script>
+      const state={view:'donor',loggedIn:false,err:'',creds:{u:'',p:''},items:[
+        {id:1,name:'Canned Beans',quantity:26,urgent:false},
+        {id:2,name:'Infant Formula',quantity:7,urgent:true},
+        {id:3,name:'Brown Rice',quantity:15,urgent:false},
+        {id:4,name:'Shelf-Stable Milk',quantity:4,urgent:true},
+        {id:5,name:'Peanut Butter',quantity:21,urgent:false}
+      ]};
+      const content=document.getElementById('content');
+      const title=document.getElementById('title');
+      const donorTab=document.getElementById('donorTab');
+      const adminTab=document.getElementById('adminTab');
+      const logoutBtn=document.getElementById('logoutBtn');
+
+      const status=(it)=>it.urgent||it.quantity<=5?'Critical':it.quantity<=12?'Low':'Stable';
+
+      function renderTable(){
+        const isAdmin=state.view==='admin';
+        content.innerHTML=`<div class="card"><table><thead><tr><th>Item</th><th>Quantity</th><th>Status</th>${isAdmin?'<th>Stock</th><th>Urgent</th>':''}</tr></thead><tbody>${state.items.map(i=>`<tr><td>${i.name}</td><td>${i.quantity} units</td><td><span class="pill ${status(i)}">${status(i)}</span>${i.urgent?'<span class="warn">⚠</span>':''}</td>${isAdmin?`<td><div class="stock"><button class="iconBtn" onclick="adj(${i.id},-1)">−</button><button class="iconBtn" onclick="adj(${i.id},1)">+</button></div></td><td><button class="urgentBtn ${i.urgent?'urgentOn':'urgentOff'}" onclick="toggleUrgent(${i.id})">${i.urgent?'Marked Urgent':'Mark as Urgent'}</button></td>`:''}</tr>`).join('')}</tbody></table></div>`;
+      }
+
+      function renderLogin(){
+        content.innerHTML=`<form class="login" onsubmit="doLogin(event)"><h2 style="margin:0 0 6px">Admin Portal</h2><div class="sub" style="margin-bottom:14px">Sign in to manage inventory stock levels.</div><label>Username</label><input class="input" placeholder="admin" oninput="state.creds.u=this.value" /><label>Password</label><input type="password" class="input" placeholder="••••••••" oninput="state.creds.p=this.value" />${state.err?`<div class='err'>${state.err}</div>`:''}<button class="btn primary" style="width:100%">Login</button></form>`;
+      }
+
+      function repaint(){
+        donorTab.classList.toggle('active',state.view==='donor');
+        adminTab.classList.toggle('active',state.view==='admin');
+        logoutBtn.style.display=state.loggedIn?'inline-block':'none';
+        title.textContent=state.view==='donor'?'Donor Dashboard: Current Pantry Status':'Admin Portal: Inventory Controls';
+        if(state.view==='admin'&&!state.loggedIn) renderLogin(); else renderTable();
+      }
+
+      window.adj=(id,delta)=>{const it=state.items.find(x=>x.id===id);it.quantity=Math.max(0,it.quantity+delta);repaint();};
+      window.toggleUrgent=(id)=>{const it=state.items.find(x=>x.id===id);it.urgent=!it.urgent;repaint();};
+      window.doLogin=(e)=>{e.preventDefault();if(state.creds.u==='admin'&&state.creds.p==='foodbank123'){state.loggedIn=true;state.err='';}else{state.err='Invalid username or password. Use admin / foodbank123';}repaint();};
+
+      donorTab.onclick=()=>{state.view='donor';repaint();};
+      adminTab.onclick=()=>{state.view='admin';repaint();};
+      logoutBtn.onclick=()=>{state.loggedIn=false;state.view='donor';repaint();};
+
+      repaint();
+    </script>
+  </body>
+</html>
